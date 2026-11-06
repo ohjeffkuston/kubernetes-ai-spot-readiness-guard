@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-inference
+spec:
+  replicas: 3
+  selector:
+    matchLabels: {app: ai-inference}
+  template:
+    metadata:
+      labels:
+        app: ai-inference
+        platform.example.com/workload-class: ai-inference
+        platform.example.com/capacity-class: interruptible
+      annotations:
+        platform.example.com/checkpoint-uri: s3://example-ai-checkpoints/model-a
+        platform.example.com/checkpoint-interval-seconds: "60"
+        platform.example.com/on-demand-fallback: enabled
+        platform.example.com/interruption-handler: karpenter
+    spec:
+      terminationGracePeriodSeconds: 120
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 80
+              preference:
+                matchExpressions:
+                  - key: karpenter.sh/capacity-type
+                    operator: In
+                    values: [spot]
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector: {matchLabels: {app: ai-inference}}
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector: {matchLabels: {app: ai-inference}}
+      containers:
+        - name: server
+          image: example.invalid/inference@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          lifecycle:
+            preStop:
+              exec: {command: ["/bin/sh", "-c", "touch /tmp/draining && sleep 90"]}
+          readinessProbe:
+            httpGet: {path: /ready, port: 8080}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: {name: ai-inference}
+spec:
+  minAvailable: 2
+  selector: {matchLabels: {app: ai-inference}}

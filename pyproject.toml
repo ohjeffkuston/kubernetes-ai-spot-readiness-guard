@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kubernetes-ai-spot-readiness-guard"
+version = "0.1.0"
+description = "Deterministic pre-merge checks for interruptible Kubernetes AI workloads"
+requires-python = ">=3.11"
+dependencies = ["PyYAML>=6.0"]
+
+[project.scripts]
+spot-readiness-guard = "spot_readiness_guard.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

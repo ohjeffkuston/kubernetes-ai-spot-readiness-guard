@@ -1,0 +1,1 @@
+{"minimum_termination_grace_seconds":120,"maximum_checkpoint_interval_seconds":90,"required_topology_keys":["topology.kubernetes.io/zone","kubernetes.io/hostname"],"minimum_inference_replicas":2}
